@@ -1,11 +1,19 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 
 #define MAX_X 50 
 #define MAX_Y 50
 #define MIN_X 10
 #define MIN_Y 10
+
+enum Direction {
+    UP,
+    DOWN,
+    LEFT,
+    RIGHT
+};
 
 void printSelect(){
 	printf("=================\n");
@@ -41,7 +49,57 @@ void printTable(char **table, int x, int y){
     }
 }
 
+void makeBuildings(char** table, int x, int y, int num_buildings) {
+    for (int b = 0; b < num_buildings; b++) {
+
+        int current_x = rand() % x;
+        int current_y = rand() % y;
+        table[current_x][current_y] = '#';
+
+        int building_size = (rand() % 11) + 5;
+
+        for (int step = 0; step < building_size; step++) {
+            
+            int rand_dir = rand() % 4; 
+
+            int next_x = current_x;
+            int next_y = current_y;
+
+            if (rand_dir == UP) { 
+                next_x--;
+            } else if (rand_dir == DOWN) { 
+                next_x++;
+            } else if (rand_dir == LEFT) {
+                next_y--;
+            } else if (rand_dir == RIGHT) {
+                next_y++;
+            }
+
+            if (next_x < 0 || next_x >= x || next_y < 0 || next_y >= y) {
+                step--; 
+                continue; 
+            }
+            current_x = next_x;
+            current_y = next_y;
+            table[current_x][current_y] = '#';
+        }
+    }
+}
+
+void addZombies(char** table , int x,int y,int z_num){
+	for(int i =0;i<x;i++){
+		for(int j = 0 ; j < y ; j++){
+			if(table[i][j]== '.'){
+				table[i][j] = (rand() % z_num)+1 + '0';
+			}
+		}
+	}
+	
+}
+
 int main(void){
+	srand(time(NULL));
+	// Starting by the user input
 	int x , y , z;
 	printf("Select Dimensions: x = ");
 	scanf("%d",&x);
@@ -62,17 +120,35 @@ int main(void){
 		scanf("%d",&z);
 	}
 
+	// Allocating memory for the table according to the dimensions the user gave (x,y)
 	char **table = malloc(x * sizeof(*table));
-
-	for(int i=0 ; i<x ; i++){
-		table[i] = (char*)malloc(sizeof(char)*y);
+	if (!table) {
+		printf("failed to initialize table\n");
+		return 1;
 	}
 
+	for(int i = 0; i < x; i++) {
+		table[i] = (char*)malloc(sizeof(char) * y);
+		if (!table[i]) {
+			printf("failed to initialize table row %d\n", i);
+			for (int j = 0; j < i; j++) {
+				free(table[j]);
+			}
+			free(table);
+			return 1;
+		}
+	}
+	
+	// filling the table with dots that mean "Empty space"
 	for(int i = 0; i < x; i++){
 	    for(int j = 0; j < y; j++){
 	        table[i][j] = '.';
 	    }
 	}
+	int num_buildings = ((x * y) / 100) + 4;
+	makeBuildings(table,x,y, num_buildings);
+	addZombies(table,x,y,z);
+	
 	printTable(table,x,y);
 	cleanTable(table,x);
 
