@@ -1,1 +1,0 @@
-# Zombie-game-in-C
