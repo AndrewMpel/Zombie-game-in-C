@@ -1,9 +1,15 @@
-
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
 #include "weapons.h"
+
+#ifdef _WIN32
+    #include <windows.h>
+#else
+    #include <unistd.h>
+#endif
 
 #define MAX_X 50 
 #define MAX_Y 50
@@ -18,8 +24,9 @@ enum Direction {
 };
 
 void printSelect(){
-	printf("=================\n");
-	printf("====Zombicide====\n");
+	printf("Select your weapon: n (neurogun), b (bombing), p (plasmagun), x (Exit)\n");
+    printf("Example: n 6,6 (6,6 are the coordinates in x and y)\n");
+    printf("~> ");
 }
 
 void cleanTable(char **table,int x){
@@ -49,7 +56,8 @@ void printTable(char **table, int x, int y){
         printf("\n");
     }
 }
-
+// A function that creates buildings using the ((x * y) / 100) + 4 formula to calculate the
+// number of buildings. Then builds it in a random direction
 void makeBuildings(char** table, int x, int y, int num_buildings) {
     for (int b = 0; b < num_buildings; b++) {
 
@@ -86,7 +94,7 @@ void makeBuildings(char** table, int x, int y, int num_buildings) {
         }
     }
 }
-
+// A function that fills the table with as many zombie types as the user gave
 void addZombies(char** table , int x,int y,int z_num){
 	for(int i =0;i<x;i++){
 		for(int j = 0 ; j < y ; j++){
@@ -97,8 +105,43 @@ void addZombies(char** table , int x,int y,int z_num){
 	}
 	
 }
+bool checkWin(char** table, int x, int y){
+	for(int i = 0; i < x; i++){
+		for(int j = 0; j < y; j++){
+			if(table[i][j] >= '1' && table[i][j] <= '9'){
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+// A function that adds a sound source in a random direction so that zombies move in that way
+// int moveToSound(char** table , int x,int y){
+// 	int direction=  rand() % 4; 
+// 	switch(direction){
+// 		case UP:
+// 			
+// 			break;
+// 		case DOWN:
+// 		
+// 			break;
+// 		case LEFT:
+// 
+// 			break;
+// 		case RIGHT:
+// 
+// 			break;
+// 		default:
+// 			printf("Wrong Direction\n");
+// 			break;
+// 	}
+// }
 
 int main(void) {
+	printf("======================================================================\n");
+	printf("=====================Welcome to the Zombicide game====================\n");
+	printf("======================================================================\n");
     int x, y, z;
     srand(time(NULL));
 
@@ -148,15 +191,55 @@ int main(void) {
     makeBuildings(table, x, y, num_buildings);
     addZombies(table, x, y, z);
 
-	
+	int level = 1;
+	int score = 0;
     int game_running = 1;
     while (game_running) {
-        printTable(table, x, y);
-        
-        printf("Select your weapon: n (neurogun), b (bombing), p (plasmagun), x ()\n");
-        printf("Example: n 6,6 (6,6 are the coordinates in x and y)\n");
-        printf("~> ");
+    	if (checkWin(table,x,y)){
+        	printf("\n\nCongratulations you successfuly cleared this level!!!\n");
 
+        	fflush(stdout);
+        	#ifdef _WIN32
+        	        Sleep(2000);
+        	#else
+        	        sleep(2);
+        	#endif
+
+        	cleanTable(table,x);
+        	level++;
+			x++;
+			y++;
+			if (x > MAX_X || y > MAX_Y) {
+                printf("CONGRATULATIONS! The zombie outbreak is fully eradicated\n");
+                printf("Now the only danger is humanity itself\n");
+                break;
+            }
+            table = malloc(x * sizeof(*table));
+                if (!table) return 1;
+            for (int i = 0; i < x; i++) {
+                 table[i] = (char*)malloc(sizeof(char) * y);
+                 if (!table[i]) {
+                     for (int j = 0; j < i; j++) free(table[j]);
+                     free(table);
+                     return 1;
+                 }
+             }
+             for (int i = 0; i < x; i++) {
+                 for (int j = 0; j < y; j++) {
+                     table[i][j] = '.';
+                 }
+             }
+             int num_buildings = ((x * y) / 100) + 4;
+             makeBuildings(table, x, y, num_buildings);
+             addZombies(table, x, y, z);	
+
+             continue;
+        }
+        printf("======================================================================\n");
+        printTable(table, x, y);
+        printf("\nLevel %d - Score %d\n\n",level,score);
+
+		printSelect();
 		char move[50];
         
         fgets(move, sizeof(move), stdin);
@@ -193,17 +276,11 @@ int main(void) {
          }
          else if (weapon == 'x' || weapon == 'X') {
              printf("Exiting game...\n");
-             game_running = 0; // Breaks the loop!
-         } 
+             game_running = 0;
+         }
          else {
              printf("Error: Unknown command.\n");
          }
-        // 3. Execute the corresponding weapon function
-        // 4. Trigger sound source gravity if zombies died
-        // 5. Update and print the score
-        // 6. Check if the board is clear to advance to the next level
-        
-        // Temporary exit condition so you don't get stuck in an infinite loop
     }
     cleanTable(table, x);
     
