@@ -1,6 +1,6 @@
 #include "weapons.h"
 #include <stdio.h>
-
+#include <ctype.h>
 void neurogunSpread(int max_x, int max_y, int current_x, int current_y, char targetType, char** table) {
     if (current_x < 0 || current_x >= max_x || current_y < 0 || current_y >= max_y) return; 
     
@@ -56,4 +56,59 @@ void fireBombing(int max_x, int max_y, int target_x, int target_y, char** table)
         }
     }
     printf("Bombing Successful\n");
+}
+
+void firePlasmagun(int max_x, int max_y, int target, char direction, char** table){
+	if(tolower(direction) == 'u'){
+		if(target < 0 || target >= max_y) {
+	        perror("out of bounds\n");
+	        return;
+	    }
+	    for(int i = 0 ; i<max_x;i++){
+	    	if(table[i][target] == '#'){
+	    		return;
+	    	}
+	    	table[i][target] = '.';
+	    }
+	}
+	else if(tolower(direction) == 'd'){
+		if(target < 0 || target >= max_y) {
+	        perror("out of bounds\n");
+	        return;
+	    }
+	    for(int i = max_x-1 ; i>=0;i--){
+   	    	if(table[i][target] == '#'){
+   	    		return;
+   	    	}
+   	    	table[i][target] = '.';
+   	    }
+	}
+	else if(tolower(direction) == 'l'){
+		if(target < 0 || target >= max_x) {
+	        perror("out of bounds\n");
+	        return;
+	    }
+	    for(int i = 0 ; i<max_y;i++){
+   	    	if(table[target][i] == '#'){
+   	    		return;
+   	    	}
+   	    	table[target][i] = '.';
+   	    }
+	    
+	}
+	else if(tolower(direction) == 'r' ){
+		if(target < 0 || target >= max_x) {
+	        perror("out of bounds\n");
+	        return;
+	    }
+	    for(int i = max_y-1 ; i>=0;i--){
+   	    	if(table[target][i] == '#'){
+   	    		return;
+   	    	}
+   	    	table[target][i] = '.';
+   	    }
+	}
+	else{
+		printf("Wrong direction");
+	}
 }

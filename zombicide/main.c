@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -183,7 +184,8 @@ int main(void) {
              }
          }
          else if (weapon == 'p' || weapon == 'P') {
-             if (sscanf(move, " %c %c %d", &weapon, &direction, &target_x) == 3) {
+             if (sscanf(move, " %c %c%d", &weapon, &direction, &target_x) == 3) {
+             	 firePlasmagun(x,y,target_x-1,direction,table);
                  printf("Firing Plasma gun from side '%c' at line %d!\n", direction, target_x);
              } else {
                  printf("Error: Invalid plasma format. Use p D L (e.g., p l 15)\n");
