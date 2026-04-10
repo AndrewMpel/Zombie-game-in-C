@@ -1,20 +1,21 @@
 #include "weapons.h"
 #include <stdio.h>
 #include <ctype.h>
-void neurogunSpread(int max_x, int max_y, int current_x, int current_y, char targetType, char** table) {
+void neurogunSpread(int max_x, int max_y, int current_x, int current_y, char targetType, char** table,int* z_killed) {
     if (current_x < 0 || current_x >= max_x || current_y < 0 || current_y >= max_y) return; 
     
     if (table[current_x][current_y] != targetType) return;
 
     table[current_x][current_y] = '.';
+    (*z_killed)++;
 
-    neurogunSpread(max_x, max_y, current_x - 1, current_y, targetType, table); // UP
-    neurogunSpread(max_x, max_y, current_x + 1, current_y, targetType, table); // DOWN
-    neurogunSpread(max_x, max_y, current_x, current_y - 1, targetType, table); // LEFT
-    neurogunSpread(max_x, max_y, current_x, current_y + 1, targetType, table); // RIGHT
+    neurogunSpread(max_x, max_y, current_x - 1, current_y, targetType, table,z_killed); // UP
+    neurogunSpread(max_x, max_y, current_x + 1, current_y, targetType, table,z_killed); // DOWN
+    neurogunSpread(max_x, max_y, current_x, current_y - 1, targetType, table,z_killed); // LEFT
+    neurogunSpread(max_x, max_y, current_x, current_y + 1, targetType, table,z_killed); // RIGHT
 }
 
-void fireNeurogun(int max_x, int max_y, int target_x, int target_y, char** table) {
+void fireNeurogun(int max_x, int max_y, int target_x, int target_y, char** table,int* z_killed) {
     if (target_x < 0 || target_x >= max_x || target_y < 0 || target_y >= max_y) {
         printf("Error: Coordinates are out of bounds!\n");
         return;
@@ -38,10 +39,10 @@ void fireNeurogun(int max_x, int max_y, int target_x, int target_y, char** table
         return; 
     }
 
-    neurogunSpread(max_x, max_y, target_x, target_y, targetType, table);
+    neurogunSpread(max_x, max_y, target_x, target_y, targetType, table,z_killed);
 }
 
-void fireBombing(int max_x, int max_y, int target_x, int target_y, char** table){
+void fireBombing(int max_x, int max_y, int target_x, int target_y, char** table,int* z_killed){
     if(target_x < 0 || target_x >= max_x || target_y < 0 || target_y >= max_y) {
         perror("out of bounds\n");
         return;
@@ -51,6 +52,7 @@ void fireBombing(int max_x, int max_y, int target_x, int target_y, char** table)
             if (i >= 0 && i < max_x && j >= 0 && j < max_y) {
                 if (table[i][j] != '#') {
                     table[i][j] = '.';
+                    (*z_killed)++;
                 }
             }
         }
@@ -58,7 +60,7 @@ void fireBombing(int max_x, int max_y, int target_x, int target_y, char** table)
     printf("Bombing Successful\n");
 }
 
-void firePlasmagun(int max_x, int max_y, int target, char direction, char** table){
+void firePlasmagun(int max_x, int max_y, int target, char direction, char** table,int* z_killed){
 	if(tolower(direction) == 'u'){
 		if(target < 0 || target >= max_y) {
 	        perror("out of bounds\n");
@@ -69,6 +71,8 @@ void firePlasmagun(int max_x, int max_y, int target, char direction, char** tabl
 	    		return;
 	    	}
 	    	table[i][target] = '.';
+	    	(*z_killed)++;
+	    	
 	    }
 	}
 	else if(tolower(direction) == 'd'){
@@ -81,6 +85,7 @@ void firePlasmagun(int max_x, int max_y, int target, char direction, char** tabl
    	    		return;
    	    	}
    	    	table[i][target] = '.';
+   	    	(*z_killed)++;
    	    }
 	}
 	else if(tolower(direction) == 'l'){
@@ -93,6 +98,7 @@ void firePlasmagun(int max_x, int max_y, int target, char direction, char** tabl
    	    		return;
    	    	}
    	    	table[target][i] = '.';
+   	    	(*z_killed)++;
    	    }
 	    
 	}
@@ -106,6 +112,7 @@ void firePlasmagun(int max_x, int max_y, int target, char direction, char** tabl
    	    		return;
    	    	}
    	    	table[target][i] = '.';
+   	    	(*z_killed)++;
    	    }
 	}
 	else{

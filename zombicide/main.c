@@ -11,10 +11,11 @@
     #include <unistd.h>
 #endif
 
-#define MAX_X 50 
-#define MAX_Y 50
+#define MAX_X 30
+#define MAX_Y 30
 #define MIN_X 10
 #define MIN_Y 10
+#define BASE_SCORE 5
 
 enum Direction {
     UP,
@@ -193,8 +194,11 @@ int main(void) {
 
 	int level = 1;
 	int score = 0;
+	int z_killed = 0;
     int game_running = 1;
+    int multiplier = 1;
     while (game_running) {
+    	z_killed = 0;
     	if (checkWin(table,x,y)){
         	printf("\n\nCongratulations you successfuly cleared this level!!!\n");
 
@@ -212,6 +216,7 @@ int main(void) {
 			if (x > MAX_X || y > MAX_Y) {
                 printf("CONGRATULATIONS! The zombie outbreak is fully eradicated\n");
                 printf("Now the only danger is humanity itself\n");
+                table = NULL;
                 break;
             }
             table = malloc(x * sizeof(*table));
@@ -253,7 +258,7 @@ int main(void) {
         if (weapon == 'n' || weapon == 'N') {
              if (sscanf(move, " %c %d,%d", &weapon, &target_x, &target_y) == 3) {
                  printf("Firing Neurogun at %d, %d!\n", target_x, target_y);
-                 fireNeurogun(x,y,target_x-1,target_y-1,table);
+                 fireNeurogun(x,y,target_x-1,target_y-1,table,&z_killed);
              } else {
                  printf("Error: Invalid neurogun format. Use n X,Y (e.g., n 4,8)\n");
              }
@@ -261,14 +266,14 @@ int main(void) {
          else if (weapon == 'b' || weapon == 'B') {
              if (sscanf(move, " %c %d,%d", &weapon, &target_x, &target_y) == 3) {
                  printf("Dropping Bomb at %d, %d!\n", target_x, target_y);
-                 fireBombing(x,y,target_x-1,target_y-1,table);
+                 fireBombing(x,y,target_x-1,target_y-1,table,&z_killed);
              } else {
                  printf("Error: Invalid bomb format. Use b X,Y (e.g., b 5,5)\n");
              }
          }
          else if (weapon == 'p' || weapon == 'P') {
              if (sscanf(move, " %c %c%d", &weapon, &direction, &target_x) == 3) {
-             	 firePlasmagun(x,y,target_x-1,direction,table);
+             	 firePlasmagun(x,y,target_x-1,direction,table,&z_killed);
                  printf("Firing Plasma gun from side '%c' at line %d!\n", direction, target_x);
              } else {
                  printf("Error: Invalid plasma format. Use p D L (e.g., p l 15)\n");
@@ -281,8 +286,21 @@ int main(void) {
          else {
              printf("Error: Unknown command.\n");
          }
+         multiplier = (z_killed * (z_killed + 1)) / 2;
+         score += multiplier * 10 * level;
+         if (z_killed > 6) {
+             printf("\n\nPERFECT!!! You just wiped a huge horde of zombies!!!\n");
+             fflush(stdout);
+        	#ifdef _WIN32
+        	        Sleep(3000);
+        	#else
+        	        sleep(3);
+        	#endif
+         }
+     
     }
-    cleanTable(table, x);
-    
+    if (table != NULL) {
+        cleanTable(table, x);
+    }
     return 0;
 }
