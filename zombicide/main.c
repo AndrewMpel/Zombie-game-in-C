@@ -5,12 +5,15 @@
 #include <time.h>
 #include "weapons.h"
 
+// here we check is our system is win32 (windows) or unix based (linux)
 #ifdef _WIN32
     #include <windows.h>
 #else
     #include <unistd.h>
 #endif
 
+// here we define our minimum and maximum array boundaries and the base score for each zombie
+// which we then use to the multiplier
 #define MAX_X 30
 #define MAX_Y 30
 #define MIN_X 10
@@ -23,19 +26,34 @@ enum Direction {
     LEFT,
     RIGHT
 };
-
+// a function to clear the terminal using system calls
+void clearScreen() {
+    #ifdef _WIN32
+        system("cls");
+    #else
+        system("clear");
+    #endif
+}
+void sleepMs(int ms) {
+    #ifdef _WIN32
+        Sleep(ms);
+    #else
+        usleep(ms * 1000); 
+    #endif
+}
 void printSelect(){
 	printf("Select your weapon: n (neurogun), b (bombing), p (plasmagun), x (Exit)\n");
     printf("Example: n 6,6 (6,6 are the coordinates in x and y)\n");
     printf("~> ");
 }
-
+// a function for cleaning the table allocated memory using free()
 void cleanTable(char **table,int x){
 	for (int i = 0; i < x; i++) {
 	   free(table[i]);
 	}
 	free(table);
 }
+// A function for printing the table
 void printTable(char **table, int x, int y){
     printf("   ");
     for (int j = 0; j < y; j++) {
@@ -116,28 +134,96 @@ bool checkWin(char** table, int x, int y){
 	}
 	return true;
 }
+void renderAnimationStep(char** table, int x, int y) {
+    clearScreen();
+    printTable(table, x, y);
+    fflush(stdout);
+    sleepMs(30);
+}
 
 // A function that adds a sound source in a random direction so that zombies move in that way
-// int moveToSound(char** table , int x,int y){
-// 	int direction=  rand() % 4; 
-// 	switch(direction){
-// 		case UP:
-// 			
-// 			break;
-// 		case DOWN:
-// 		
-// 			break;
-// 		case LEFT:
-// 
-// 			break;
-// 		case RIGHT:
-// 
-// 			break;
-// 		default:
-// 			printf("Wrong Direction\n");
-// 			break;
-// 	}
-// }
+// using 2 "pointers" an anchor and a scanner it iterates through the table
+// if the scanner pointer finds a zombie it moves it to the anchor which was stationed in a blank
+// spot and then the anchor moves to the newly empty cell that the scanner left behind
+void moveToSound(char** table, int x, int y, int direction) {
+    switch(direction) {
+        case RIGHT:
+            for (int i = 0; i < x; i++) {
+                int pointer = y - 1;
+                for (int s = y - 1; s>= 0; s--) {
+                    if (table[i][s] == '#') {
+                        pointer = s - 1;
+                    }else if (table[i][s] >= '1' && table[i][s] <= '9') {
+                        if (s != pointer) {
+                            char zombie = table[i][s];
+                            table[i][s] = '.';
+                            table[i][pointer] = zombie;
+                            renderAnimationStep(table, x, y);
+                        }
+                        pointer--;
+                    }
+                }
+            }
+            break;
+        case LEFT:
+            for(int i = 0; i <x; i++){
+                int pointer = 0;
+                for(int s = 0; s< y; s++) {
+                    if (table[i][s] == '#') {
+                        pointer = s + 1;
+                    }else if(table[i][s] >= '1' && table[i][s] <= '9') {
+                        if (s != pointer) {
+                            char zombie = table[i][s];
+                            table[i][s] = '.';
+                            table[i][pointer] = zombie;
+                            renderAnimationStep(table, x, y);
+                        }
+                        pointer++;
+                    }
+                }
+            }
+            break;
+        case DOWN:
+            for (int j = 0; j < y; j++) {
+                int pointer = x - 1;
+                for (int s = x - 1; s >= 0; s--) {
+                    if (table[s][j] == '#') {
+                        pointer = s - 1;
+                    } else if (table[s][j] >= '1' && table[s][j] <= '9') {
+                        if (s != pointer) {
+                            char zombie = table[s][j];
+                            table[s][j] = '.';
+                            table[pointer][j] = zombie;
+                            renderAnimationStep(table, x, y);
+                        }
+                        pointer--;
+                    }
+                }
+            }
+            break;
+        case UP:
+            for(int j =0; j <y; j++) {
+                int pointer = 0;
+                for(int s= 0; s< x; s++) {
+                    if (table[s][j] == '#'){
+                        pointer = s + 1;
+                    }else if(table[s][j] >= '1' && table[s][j] <= '9') {
+                        if (s != pointer) {
+                            char zombie = table[s][j];
+                            table[s][j] = '.';
+                            table[pointer][j] = zombie;
+                            renderAnimationStep(table, x, y);
+                        }
+                        pointer++;
+                    }
+                }
+            }
+            break;
+        default:
+            printf("Wrong Direction\n");
+            break;
+    }
+}
 
 int main(void) {
 	printf("======================================================================\n");
@@ -197,17 +283,14 @@ int main(void) {
 	int z_killed = 0;
     int game_running = 1;
     int multiplier = 1;
+    int direction=  rand() % 4;
     while (game_running) {
     	z_killed = 0;
     	if (checkWin(table,x,y)){
         	printf("\n\nCongratulations you successfuly cleared this level!!!\n");
 
         	fflush(stdout);
-        	#ifdef _WIN32
-        	        Sleep(2000);
-        	#else
-        	        sleep(2);
-        	#endif
+        	sleepMs(2000);
 
         	cleanTable(table,x);
         	level++;
@@ -237,11 +320,20 @@ int main(void) {
              int num_buildings = ((x * y) / 100) + 4;
              makeBuildings(table, x, y, num_buildings);
              addZombies(table, x, y, z);	
+             direction=  rand() % 4;
 
              continue;
         }
+        
+        clearScreen();
+        
         printf("======================================================================\n");
         printTable(table, x, y);
+		printf("======================================================================\n");
+        if(direction == UP) printf("Sound direction is up");
+        else if(direction == DOWN) printf("Sound direction is down");
+        else if(direction == LEFT) printf("Sound direction is left");
+        else if(direction == RIGHT) printf("Sound direction is right");
         printf("\nLevel %d - Score %d\n\n",level,score);
 
 		printSelect();
@@ -251,13 +343,12 @@ int main(void) {
 
         char weapon = ' ';
         int target_x = -1, target_y = -1;
-        char direction = ' ';
+        char plasma_dir = ' ';
         
         sscanf(move, " %c", &weapon);
         
         if (weapon == 'n' || weapon == 'N') {
              if (sscanf(move, " %c %d,%d", &weapon, &target_x, &target_y) == 3) {
-                 printf("Firing Neurogun at %d, %d!\n", target_x, target_y);
                  fireNeurogun(x,y,target_x-1,target_y-1,table,&z_killed);
              } else {
                  printf("Error: Invalid neurogun format. Use n X,Y (e.g., n 4,8)\n");
@@ -265,38 +356,39 @@ int main(void) {
          } 
          else if (weapon == 'b' || weapon == 'B') {
              if (sscanf(move, " %c %d,%d", &weapon, &target_x, &target_y) == 3) {
-                 printf("Dropping Bomb at %d, %d!\n", target_x, target_y);
                  fireBombing(x,y,target_x-1,target_y-1,table,&z_killed);
              } else {
                  printf("Error: Invalid bomb format. Use b X,Y (e.g., b 5,5)\n");
              }
          }
          else if (weapon == 'p' || weapon == 'P') {
-             if (sscanf(move, " %c %c%d", &weapon, &direction, &target_x) == 3) {
-             	 firePlasmagun(x,y,target_x-1,direction,table,&z_killed);
-                 printf("Firing Plasma gun from side '%c' at line %d!\n", direction, target_x);
+             if (sscanf(move, " %c %c%d", &weapon, &plasma_dir, &target_x) == 3) {
+             	 firePlasmagun(x,y,target_x-1,plasma_dir,table,&z_killed);
              } else {
                  printf("Error: Invalid plasma format. Use p D L (e.g., p l 15)\n");
              }
          }
          else if (weapon == 'x' || weapon == 'X') {
              printf("Exiting game...\n");
-             game_running = 0;
+             break;
          }
          else {
              printf("Error: Unknown command.\n");
+             continue;
          }
+         // Score multiplier
          multiplier = (z_killed * (z_killed + 1)) / 2;
-         score += multiplier * 10 * level;
+         score += multiplier * BASE_SCORE * level;
          if (z_killed > 6) {
              printf("\n\nPERFECT!!! You just wiped a huge horde of zombies!!!\n");
              fflush(stdout);
-        	#ifdef _WIN32
-        	        Sleep(3000);
-        	#else
-        	        sleep(3);
-        	#endif
+        	 sleepMs(2000);
          }
+         clearScreen();
+         printTable(table, x, y);
+         fflush(stdout);
+         sleepMs(500);
+         moveToSound(table,x,y,direction);
      
     }
     if (table != NULL) {
